@@ -36,9 +36,7 @@ services:
     depends_on:
       - db
       - redis
-    volumes:
-      - ./backend:/usr/src/app:delegated
-    command: sh -c "npm install && npm run dev"
+    command: node dist/main
 
   frontend:
     build:
@@ -51,9 +49,6 @@ services:
       - "3000:3000"
     depends_on:
       - backend
-    volumes:
-      - ./frontend:/usr/src/app:delegated
-    command: sh -c "npm install && npm start"
 
 volumes:
   db_data:

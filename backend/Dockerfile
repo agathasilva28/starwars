@@ -1,14 +1,22 @@
-FROM node:18-alpine
-
+# Multi-stage Dockerfile for Nest.js application
+FROM node:18-alpine AS deps
 WORKDIR /usr/src/app
+COPY package*.json ./
+RUN npm ci --production --silent
 
-# Install dependencies
+FROM node:18-alpine AS builder
+WORKDIR /usr/src/app
 COPY package*.json ./
 RUN npm ci --silent
-
-# Copy source
 COPY . .
+RUN npm run build
+
+FROM node:18-alpine AS runner
+WORKDIR /usr/src/app
+ENV NODE_ENV=production
+COPY --from=builder /usr/src/app/package*.json ./
+COPY --from=builder /usr/src/app/node_modules ./node_modules
+COPY --from=builder /usr/src/app/dist ./dist
 
 EXPOSE 3000
-
-CMD ["npm", "start"]
+CMD ["node", "dist/main"]
