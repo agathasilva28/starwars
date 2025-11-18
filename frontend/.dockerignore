@@ -1,4 +1,12 @@
 node_modules
 npm-debug.log
 .env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.next
+.next/cache
 /build
+.DS_Store
+dist
