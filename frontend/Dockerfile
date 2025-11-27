@@ -1,25 +1,33 @@
+# Stage 1: Build
+FROM node:22-alpine AS builder
 
-# Multi-stage Dockerfile for Next.js (production)
-FROM node:20-alpine AS base
 WORKDIR /app
 
-FROM base AS deps
-COPY package.json package-lock.json* ./
-RUN npm ci --silent
+# Copy package files
+COPY package*.json ./
 
-FROM base AS builder
-COPY --from=deps /app/node_modules ./node_modules
+# Install dependencies
+RUN npm ci
+
+# Copy source
 COPY . .
+
+# Build the Vite app
 RUN npm run build
 
-FROM node:20-alpine AS runner
+# Stage 2: Runtime
+FROM node:18-alpine
+
 WORKDIR /app
-ENV NODE_ENV=production
 
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
+# Install a simple HTTP server to serve the built app
+RUN npm install -g serve
 
+# Copy built app from builder stage
+COPY --from=builder /app/dist ./dist
+
+# Expose port
 EXPOSE 3000
-CMD ["npm", "run", "start"]
+
+# Start the server
+CMD ["serve", "-s", "dist", "-l", "3000"]

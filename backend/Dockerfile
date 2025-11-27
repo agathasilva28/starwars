@@ -1,22 +1,29 @@
-# Multi-stage Dockerfile for Nest.js application
-FROM node:18-alpine AS deps
-WORKDIR /usr/src/app
-COPY package*.json ./
-RUN npm ci --production --silent
+FROM node:22-alpine AS deps
+WORKDIR /app
 
-FROM node:18-alpine AS builder
-WORKDIR /usr/src/app
+COPY tsconfig*.json ./
 COPY package*.json ./
-RUN npm ci --silent
-COPY . .
+RUN npm install
 RUN npm run build
 
-FROM node:18-alpine AS runner
-WORKDIR /usr/src/app
+FROM node:22-alpine AS builder
+WORKDIR /app
+COPY tsconfig*.json ./
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+RUN npm run build
+
+FROM node:22-alpine AS runner
+WORKDIR /app
+COPY tsconfig*.json ./
 ENV NODE_ENV=production
-COPY --from=builder /usr/src/app/package*.json ./
-COPY --from=builder /usr/src/app/node_modules ./node_modules
-COPY --from=builder /usr/src/app/dist ./dist
+
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
 
 EXPOSE 3000
-CMD ["node", "dist/main"]
+
+CMD ["node", "dist/src/main"]
